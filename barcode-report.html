@@ -30,6 +30,7 @@
   th{background:#F3F0FA;color:var(--indigo);padding:10px;text-align:right;border:1px solid #E7E2F2;font-size:.95rem;}
   td{padding:10px;border:1px solid #E7E2F2;vertical-align:middle;}
   .name-cell{font-weight:700;font-size:1rem;}
+  .balance-cell{font-weight:800;color:var(--violet);text-align:center;white-space:nowrap;}
   .qr-cell{text-align:center;width:120px;}
   .qr-cell canvas, .qr-cell img{width:90px !important;height:90px !important;}
 
@@ -150,10 +151,11 @@
         <div class="stage-section">
           <div class="stage-title">${g.stage}</div>
           <table>
-            <tr><th>المرحلة</th><th>الباركود</th></tr>
+            <tr><th>المرحلة</th><th>الرصيد</th><th>الباركود</th></tr>
             ${g.students.map((s, si) => `
               <tr>
                 <td class="name-cell">${s.name}</td>
+                <td class="balance-cell">${s.balance} دينار</td>
                 <td class="qr-cell"><div id="qr-${gi}-${si}"></div></td>
               </tr>
             `).join('')}
