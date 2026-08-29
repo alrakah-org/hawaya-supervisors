@@ -207,6 +207,11 @@
   .nav-btn .nav-ic{font-size:1.3rem;transition:transform .2s ease;}
   .nav-btn.active{color:var(--indigo);}
   .nav-btn.active .nav-ic{transform:translateY(-2px);}
+  .bottom-nav{overflow-x:auto;}
+  .bottom-nav .nav-btn{min-width:74px;}
+  .ranking-columns{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;align-items:start;}
+  .ranking-column{background:#FBFAFD;border:2px solid #EFEAF8;border-radius:18px;padding:14px;}
+  .ranking-total{font-family:'Baloo Bhaijaan 2',sans-serif;font-size:1.2rem;font-weight:800;color:var(--violet);margin:6px 0 12px;}
 
   /* ===================== عناصر مشتركة لإدارة القوائم (الجوائز / النصائح) ===================== */
   .list-item{
@@ -312,8 +317,6 @@
           <option>عبدالعزيز الجامع</option>
           <option>فهد الخضير</option>
           <option>أسامة نور</option>
-          <option>هادي باشا</option>
-          <option>معتصم عماد</option>
         </select>
       </label>
       <label>الرقم السري<input type="text" id="supervisorPinInput" inputmode="numeric" maxlength="4" placeholder="٤ أرقام" required></label>
@@ -702,6 +705,50 @@
 
     </div>
 
+    <!-- ============ 4) المجموعات ============ -->
+    <div class="page-panel" data-page="4">
+      <div class="card">
+        <div class="section-title">👥 إنشاء وإدارة المجموعات</div>
+        <div class="section-sub">اختر المرحلة، اكتب اسم المجموعة، ثم حدد طلابها</div>
+        <input type="hidden" id="editingGroupId">
+        <label>المرحلة<select id="groupStageSelect"><option value="">اختر المرحلة</option><option>أول ابتدائي</option><option>ثاني ابتدائي</option><option>ثالث ابتدائي</option><option>رابع ابتدائي</option><option>خامس ابتدائي</option><option>سادس ابتدائي</option><option>أول متوسط</option><option>ثاني متوسط</option><option>ثالث متوسط</option><option>أول ثانوي</option><option>ثاني ثانوي</option><option>ثالث ثانوي</option></select></label>
+        <label>اسم المجموعة<input id="groupNameInput" type="text" placeholder="مثال: فرسان الهمة"></label>
+        <div id="groupStudentsPicker"><p class="list-empty">اختر المرحلة لعرض الطلاب</p></div>
+        <button type="button" id="saveGroupBtn">💾 حفظ المجموعة</button>
+        <button type="button" id="cancelGroupEditBtn" class="btn-secondary hidden">إلغاء التعديل</button>
+        <p class="error" id="groupFormMsg"></p>
+      </div>
+      <div class="card"><div class="section-title">📋 المجموعات الحالية</div><div id="groupsList"></div></div>
+    </div>
+
+    <!-- ============ 5) الترتيب ============ -->
+    <div class="page-panel" data-page="5">
+      <div class="card">
+        <div class="section-title">🏆 ترتيب المجموعات والطلاب</div>
+        <label>المرحلة<select id="rankingStageSelect"><option value="">كل المراحل</option><option>أول ابتدائي</option><option>ثاني ابتدائي</option><option>ثالث ابتدائي</option><option>رابع ابتدائي</option><option>خامس ابتدائي</option><option>سادس ابتدائي</option><option>أول متوسط</option><option>ثاني متوسط</option><option>ثالث متوسط</option><option>أول ثانوي</option><option>ثاني ثانوي</option><option>ثالث ثانوي</option></select></label>
+        <label>المجموعة<select id="rankingGroupSelect"><option value="">كل المجموعات</option></select></label>
+        <button type="button" id="showRankingBtn">إظهار الترتيب</button>
+      </div>
+      <div id="rankingColumns" class="ranking-columns"></div>
+    </div>
+
+    <!-- ============ 6) بنود النقاط ============ -->
+    <div class="page-panel" data-page="6">
+      <div class="card">
+        <div class="section-title">⚙️ إدارة بنود النقاط</div>
+        <div class="section-sub">أضف بندًا أو عدّل اسمه ونقاطه وعدد مربعاته (الحد الأقصى 4)</div>
+        <input type="hidden" id="achievementItemKey">
+        <label>اسم البند<input id="achievementItemLabel" type="text" placeholder="مثال: الكرم"></label>
+        <label>نقاط كل مربع<input id="achievementItemPoints" type="number" inputmode="numeric" min="0" placeholder="مثال: 30"></label>
+        <label>عدد مربعات الصح<select id="achievementItemMaxChecks"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
+        <label>نوع البند<select id="achievementItemType"><option value="daily">يومي</option><option value="weekly">أسبوعي</option></select></label>
+        <button type="button" id="saveAchievementItemBtn">💾 حفظ البند</button>
+        <button type="button" id="cancelAchievementItemEditBtn" class="btn-secondary hidden">إلغاء التعديل</button>
+        <p class="error" id="achievementItemMsg"></p>
+      </div>
+      <div class="card"><div class="section-title">📋 البنود الحالية</div><div id="achievementItemsList"></div></div>
+    </div>
+
   </div>
 
   <div class="bottom-nav">
@@ -709,6 +756,9 @@
     <button class="nav-btn" data-index="1"><span class="nav-ic">📣</span><span>الإعلانات</span></button>
     <button class="nav-btn" data-index="2"><span class="nav-ic">🎁</span><span>الجوائز</span></button>
     <button class="nav-btn" data-index="3"><span class="nav-ic">📝</span><span>التسجيل</span></button>
+    <button class="nav-btn" data-index="4"><span class="nav-ic">👥</span><span>المجموعات</span></button>
+    <button class="nav-btn" data-index="5"><span class="nav-ic">🏆</span><span>الترتيب</span></button>
+    <button class="nav-btn" data-index="6"><span class="nav-ic">⚙️</span><span>البنود</span></button>
   </div>
 
   <!-- شريط الإجراء الجماعي — يظهر فقط لو فيه طلاب محددين بالقائمة -->
@@ -768,9 +818,7 @@
     'بشارة الزبير': '4051',
     'عبدالعزيز الجامع': '8374',
     'فهد الخضير': '1592',
-    'أسامة نور': '6203',
-    'هادي باشا': '9486',
-    'معتصم عماد': '3718'
+    'أسامة نور': '6203'
   };
   const SUPERVISOR_SESSION_KEY = 'hawaya_supervisor_session';
   let currentSupervisorName = '';
@@ -853,7 +901,7 @@
      التنقل بين التبويبات الثلاثة — نفس آلية تطبيق الطالب بالضبط:
      الانزلاق يكون بنفس جهة الأيقونة المضغوطة
      ==================================================================== */
-  const panels = [0, 1, 2, 3].map((i) => document.querySelector('.page-panel[data-page="' + i + '"]'));
+  const panels = [0, 1, 2, 3, 4, 5, 6].map((i) => document.querySelector('.page-panel[data-page="' + i + '"]'));
   const navButtons = document.querySelectorAll('.nav-btn');
   let currentIndex = 0;
 
@@ -903,6 +951,9 @@
       loadRewards();
       loadPurchaseRequests();
     }
+    if (newIndex === 4) loadGroupsAdmin();
+    if (newIndex === 5) loadRankingGroupOptions();
+    if (newIndex === 6) loadAchievementItemsAdmin();
   }
 
   navButtons.forEach((btn) => {
@@ -2430,6 +2481,202 @@
     } else {
       btn.disabled = false; btn.textContent = '✅ تأكيد للكل المحددين';
     }
+  });
+
+  /* ==================== إدارة المجموعات والترتيب ==================== */
+  let groupsAdminCache = [];
+
+  async function ensureStudentsCache() {
+    if (allStudentsCache && allStudentsCache.length) return;
+    const data = await callAppsScript({ action: 'getStudentsByStage', stage: '' });
+    allStudentsCache = data.success ? data.students : [];
+  }
+
+  function renderGroupStudentsPicker(stage, selectedIds) {
+    const wrap = document.getElementById('groupStudentsPicker');
+    const selected = new Set((selectedIds || []).map(String));
+    const students = (allStudentsCache || []).filter((s) => s.stage === stage);
+    if (!students.length) { wrap.innerHTML = '<p class="list-empty">لا يوجد طلاب بهذه المرحلة</p>'; return; }
+    wrap.innerHTML = students.map((s) => `<label class="list-item" style="cursor:pointer;">
+      <input type="checkbox" class="group-student-checkbox" value="${s.id}" ${selected.has(String(s.id)) ? 'checked' : ''} style="width:22px;margin:0;">
+      <span style="flex:1;font-weight:700;">${s.name}</span><small>${s.balance} نقطة</small>
+    </label>`).join('');
+  }
+
+  async function loadGroupsAdmin() {
+    await ensureStudentsCache();
+    const stage = document.getElementById('groupStageSelect').value;
+    const data = await callAppsScript({ action: 'getGroups', stage: '' });
+    groupsAdminCache = data.success ? data.groups : [];
+    const wrap = document.getElementById('groupsList');
+    if (!groupsAdminCache.length) { wrap.innerHTML = '<p class="list-empty">لا توجد مجموعات حتى الآن</p>'; return; }
+    wrap.innerHTML = groupsAdminCache.map((g) => `<div class="list-item">
+      <div style="flex:1;"><div class="list-item-title">${g.name}</div><div class="list-item-sub">${g.stage} — ${g.members.length} طلاب — ${g.totalPoints} نقطة</div></div>
+      <div class="list-item-actions"><button type="button" class="icon-btn" data-edit-group="${g.id}">✏️</button><button type="button" class="icon-btn" data-delete-group="${g.id}">🗑️</button></div>
+    </div>`).join('');
+    if (stage) renderGroupStudentsPicker(stage, []);
+  }
+
+  document.getElementById('groupStageSelect').addEventListener('change', async (e) => {
+    await ensureStudentsCache();
+    renderGroupStudentsPicker(e.target.value, []);
+  });
+
+  document.getElementById('groupsList').addEventListener('click', async (e) => {
+    const editBtn = e.target.closest('[data-edit-group]');
+    const deleteBtn = e.target.closest('[data-delete-group]');
+    if (editBtn) {
+      const group = groupsAdminCache.find((g) => g.id === editBtn.dataset.editGroup);
+      if (!group) return;
+      document.getElementById('editingGroupId').value = group.id;
+      document.getElementById('groupNameInput').value = group.name;
+      document.getElementById('groupStageSelect').value = group.stage;
+      renderGroupStudentsPicker(group.stage, group.members.map((m) => m.id));
+      document.getElementById('cancelGroupEditBtn').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    if (deleteBtn && confirm('هل تريد حذف هذه المجموعة؟')) {
+      await callAppsScript({ action: 'deleteGroup', groupId: deleteBtn.dataset.deleteGroup });
+      await loadGroupsAdmin();
+    }
+  });
+
+  function resetGroupForm() {
+    document.getElementById('editingGroupId').value = '';
+    document.getElementById('groupNameInput').value = '';
+    document.getElementById('groupStageSelect').value = '';
+    document.getElementById('groupStudentsPicker').innerHTML = '<p class="list-empty">اختر المرحلة لعرض الطلاب</p>';
+    document.getElementById('cancelGroupEditBtn').classList.add('hidden');
+  }
+  document.getElementById('cancelGroupEditBtn').addEventListener('click', resetGroupForm);
+
+  document.getElementById('saveGroupBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('saveGroupBtn');
+    const msg = document.getElementById('groupFormMsg');
+    const payload = {
+      action: 'saveGroup',
+      groupId: document.getElementById('editingGroupId').value,
+      name: document.getElementById('groupNameInput').value.trim(),
+      stage: document.getElementById('groupStageSelect').value,
+      studentIds: Array.from(document.querySelectorAll('.group-student-checkbox:checked')).map((el) => el.value)
+    };
+    btn.disabled = true; msg.textContent = '';
+    try {
+      const result = await callAppsScript(payload);
+      msg.style.color = result.success ? 'var(--success)' : 'var(--error)';
+      msg.textContent = result.success ? '✅ تم حفظ المجموعة' : (result.error || 'تعذر الحفظ');
+      if (result.success) { resetGroupForm(); await loadGroupsAdmin(); }
+    } finally { btn.disabled = false; }
+  });
+
+  async function loadRankingGroupOptions() {
+    const stage = document.getElementById('rankingStageSelect').value;
+    const data = await callAppsScript({ action: 'getGroups', stage: stage });
+    const select = document.getElementById('rankingGroupSelect');
+    select.innerHTML = '<option value="">كل المجموعات</option>' + (data.groups || []).map((g) => `<option value="${g.id}">${g.name}</option>`).join('');
+  }
+  document.getElementById('rankingStageSelect').addEventListener('change', loadRankingGroupOptions);
+
+  document.getElementById('showRankingBtn').addEventListener('click', async () => {
+    const wrap = document.getElementById('rankingColumns');
+    wrap.innerHTML = '<div class="card"><p class="list-empty">جاري تحميل الترتيب...</p></div>';
+    const data = await callAppsScript({ action: 'getGroupsRanking', stage: document.getElementById('rankingStageSelect').value, groupId: document.getElementById('rankingGroupSelect').value });
+    if (!data.success || !data.groups.length) { wrap.innerHTML = '<div class="card"><p class="list-empty">لا توجد مجموعات مطابقة</p></div>'; return; }
+    wrap.innerHTML = data.groups.map((g, groupIndex) => `<div class="ranking-column">
+      <div class="section-title">${groupIndex + 1}. ${g.name}</div>
+      <div class="ranking-total">مجموع المجموعة: ${g.totalPoints}</div>
+      ${g.members.map((s, i) => `<div class="list-item" style="padding:10px 0;"><b style="width:26px;">${i + 1}</b><span style="flex:1;">${s.name}</span><strong>${s.balance}</strong></div>`).join('')}
+    </div>`).join('');
+  });
+
+  /* ==================== إدارة بنود النقاط ==================== */
+  let achievementItemsAdminCache = [];
+
+  function resetAchievementItemForm() {
+    document.getElementById('achievementItemKey').value = '';
+    document.getElementById('achievementItemLabel').value = '';
+    document.getElementById('achievementItemPoints').value = '';
+    document.getElementById('achievementItemMaxChecks').value = '1';
+    document.getElementById('achievementItemType').value = 'daily';
+    document.getElementById('achievementItemMaxChecks').disabled = false;
+    document.getElementById('cancelAchievementItemEditBtn').classList.add('hidden');
+  }
+
+  async function loadAchievementItemsAdmin() {
+    const wrap = document.getElementById('achievementItemsList');
+    wrap.innerHTML = '<p class="list-empty">جاري تحميل البنود...</p>';
+    const data = await callAppsScript({ action: 'getAchievementItems', includeInactive: true });
+    achievementItemsAdminCache = data.success ? (data.items || []) : [];
+    if (!achievementItemsAdminCache.length) {
+      wrap.innerHTML = '<p class="list-empty">لا توجد بنود حتى الآن</p>';
+      return;
+    }
+    wrap.innerHTML = achievementItemsAdminCache.map((item) => `<div class="list-item" style="opacity:${item.active ? 1 : .58}">
+      <div style="flex:1;"><div class="list-item-title">${item.label}</div><div class="list-item-sub">${item.type === 'weekly' ? 'أسبوعي' : 'يومي'} — ${item.points} نقطة للمربع — ${item.maxChecks} ${item.maxChecks === 1 ? 'مربع' : 'مربعات'}</div></div>
+      <div class="list-item-actions">
+        <button type="button" class="icon-btn" data-edit-achievement="${item.key}" aria-label="تعديل">✏️</button>
+        <button type="button" class="icon-btn" data-toggle-achievement="${item.key}" data-active="${!item.active}" aria-label="${item.active ? 'تعطيل' : 'تفعيل'}">${item.active ? '⏸️' : '▶️'}</button>
+      </div>
+    </div>`).join('');
+  }
+
+  document.getElementById('achievementItemType').addEventListener('change', (e) => {
+    const weekly = e.target.value === 'weekly';
+    document.getElementById('achievementItemMaxChecks').disabled = weekly;
+    if (weekly) document.getElementById('achievementItemMaxChecks').value = '1';
+  });
+
+  document.getElementById('achievementItemsList').addEventListener('click', async (e) => {
+    const editBtn = e.target.closest('[data-edit-achievement]');
+    const toggleBtn = e.target.closest('[data-toggle-achievement]');
+    if (editBtn) {
+      const item = achievementItemsAdminCache.find((x) => x.key === editBtn.dataset.editAchievement);
+      if (!item) return;
+      document.getElementById('achievementItemKey').value = item.key;
+      document.getElementById('achievementItemLabel').value = item.label;
+      document.getElementById('achievementItemPoints').value = item.points;
+      document.getElementById('achievementItemMaxChecks').value = item.maxChecks;
+      document.getElementById('achievementItemType').value = item.type;
+      document.getElementById('achievementItemMaxChecks').disabled = item.type === 'weekly';
+      document.getElementById('cancelAchievementItemEditBtn').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    if (toggleBtn) {
+      toggleBtn.disabled = true;
+      await callAppsScript({ action: 'toggleAchievementItem', key: toggleBtn.dataset.toggleAchievement, active: toggleBtn.dataset.active === 'true' });
+      await loadAchievementItemsAdmin();
+    }
+  });
+
+  document.getElementById('cancelAchievementItemEditBtn').addEventListener('click', resetAchievementItemForm);
+  document.getElementById('saveAchievementItemBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('saveAchievementItemBtn');
+    const msg = document.getElementById('achievementItemMsg');
+    const type = document.getElementById('achievementItemType').value;
+    const current = achievementItemsAdminCache.find((x) => x.key === document.getElementById('achievementItemKey').value);
+    const labelValue = document.getElementById('achievementItemLabel').value.trim();
+    const pointsValue = document.getElementById('achievementItemPoints').value;
+    if (!labelValue || pointsValue === '' || Number(pointsValue) < 0) {
+      msg.style.color = 'var(--error)';
+      msg.textContent = !labelValue ? 'اسم البند مطلوب' : 'أدخل عدد نقاط صحيح';
+      return;
+    }
+    const item = {
+      key: document.getElementById('achievementItemKey').value,
+      label: labelValue,
+      points: Number(pointsValue),
+      maxChecks: type === 'weekly' ? 1 : Number(document.getElementById('achievementItemMaxChecks').value),
+      type: type,
+      active: current ? current.active : true,
+      order: current ? current.order : achievementItemsAdminCache.length + 1
+    };
+    btn.disabled = true; msg.textContent = '';
+    try {
+      const result = await callAppsScript({ action: 'saveAchievementItem', item: item });
+      msg.style.color = result.success ? 'var(--success)' : 'var(--error)';
+      msg.textContent = result.success ? '✅ تم حفظ البند' : (result.error || 'تعذر حفظ البند');
+      if (result.success) { resetAchievementItemForm(); await loadAchievementItemsAdmin(); }
+    } finally { btn.disabled = false; }
   });
 </script>
 </body>
