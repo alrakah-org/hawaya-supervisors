@@ -709,11 +709,12 @@
     <div class="page-panel" data-page="4">
       <div class="card">
         <div class="section-title">👥 إنشاء وإدارة المجموعات</div>
-        <div class="section-sub">اختر المرحلة، اكتب اسم المجموعة، ثم حدد طلابها</div>
+        <div class="section-sub">اختر مجموعة موجودة لتعديلها، أو أنشئ مجموعة جديدة وحدد طلابها من أي صف أو مرحلة</div>
         <input type="hidden" id="editingGroupId">
-        <label>المرحلة<select id="groupStageSelect"><option value="">اختر المرحلة</option><option>أول ابتدائي</option><option>ثاني ابتدائي</option><option>ثالث ابتدائي</option><option>رابع ابتدائي</option><option>خامس ابتدائي</option><option>سادس ابتدائي</option><option>أول متوسط</option><option>ثاني متوسط</option><option>ثالث متوسط</option><option>أول ثانوي</option><option>ثاني ثانوي</option><option>ثالث ثانوي</option></select></label>
+        <label>تصنيف المجموعة<select id="groupStageSelect"><option value="مختلطة">مختلطة</option><option value="ابتدائي">ابتدائي</option><option value="متوسط">متوسط</option><option value="ثانوي">ثانوي</option></select></label>
         <label>اسم المجموعة<input id="groupNameInput" type="text" placeholder="مثال: فرسان الهمة"></label>
-        <div id="groupStudentsPicker"><p class="list-empty">اختر المرحلة لعرض الطلاب</p></div>
+        <label>البحث عن طالب<input id="groupStudentSearchInput" type="search" placeholder="اكتب اسم الطالب أو صفه"></label>
+        <div id="groupStudentsPicker"><p class="list-empty">جاري تحميل الطلاب...</p></div>
         <button type="button" id="saveGroupBtn">💾 حفظ المجموعة</button>
         <button type="button" id="cancelGroupEditBtn" class="btn-secondary hidden">إلغاء التعديل</button>
         <p class="error" id="groupFormMsg"></p>
@@ -725,7 +726,7 @@
     <div class="page-panel" data-page="5">
       <div class="card">
         <div class="section-title">🏆 ترتيب المجموعات والطلاب</div>
-        <label>المرحلة<select id="rankingStageSelect"><option value="">كل المراحل</option><option>أول ابتدائي</option><option>ثاني ابتدائي</option><option>ثالث ابتدائي</option><option>رابع ابتدائي</option><option>خامس ابتدائي</option><option>سادس ابتدائي</option><option>أول متوسط</option><option>ثاني متوسط</option><option>ثالث متوسط</option><option>أول ثانوي</option><option>ثاني ثانوي</option><option>ثالث ثانوي</option></select></label>
+        <label>تصنيف المجموعة<select id="rankingStageSelect"><option value="">كل التصنيفات</option><option value="مختلطة">مختلطة</option><option value="ابتدائي">ابتدائي</option><option value="متوسط">متوسط</option><option value="ثانوي">ثانوي</option></select></label>
         <label>المجموعة<select id="rankingGroupSelect"><option value="">كل المجموعات</option></select></label>
         <button type="button" id="showRankingBtn">إظهار الترتيب</button>
       </div>
@@ -2491,20 +2492,27 @@
     allStudentsCache = data.success ? data.students : [];
   }
 
-  function renderGroupStudentsPicker(stage, selectedIds) {
+  let groupSelectedIds = new Set();
+
+  function renderGroupStudentsPicker(selectedIds) {
     const wrap = document.getElementById('groupStudentsPicker');
-    const selected = new Set((selectedIds || []).map(String));
-    const students = (allStudentsCache || []).filter((s) => s.stage === stage);
-    if (!students.length) { wrap.innerHTML = '<p class="list-empty">لا يوجد طلاب بهذه المرحلة</p>'; return; }
-    wrap.innerHTML = students.map((s) => `<label class="list-item" style="cursor:pointer;">
-      <input type="checkbox" class="group-student-checkbox" value="${s.id}" ${selected.has(String(s.id)) ? 'checked' : ''} style="width:22px;margin:0;">
-      <span style="flex:1;font-weight:700;">${s.name}</span><small>${s.balance} نقطة</small>
-    </label>`).join('');
+    if (selectedIds) groupSelectedIds = new Set(selectedIds.map(String));
+    const query = document.getElementById('groupStudentSearchInput').value.trim().toLowerCase();
+    const students = (allStudentsCache || []).filter((s) => !query || String(s.name).toLowerCase().includes(query) || String(s.stage).toLowerCase().includes(query));
+    if (!students.length) { wrap.innerHTML = '<p class="list-empty">لا توجد نتائج مطابقة</p>'; return; }
+    const byStage = {};
+    students.forEach((s) => { (byStage[s.stage] ||= []).push(s); });
+    wrap.innerHTML = Object.keys(byStage).map((stage) => `<div style="margin-bottom:14px;">
+      <div class="section-sub" style="font-weight:800;color:var(--violet);margin:8px 0;">${stage}</div>
+      ${byStage[stage].map((s) => `<label class="list-item" style="cursor:pointer;">
+        <input type="checkbox" class="group-student-checkbox" value="${s.id}" ${groupSelectedIds.has(String(s.id)) ? 'checked' : ''} style="width:22px;margin:0;">
+        <span style="flex:1;font-weight:700;">${s.name}</span><small>${s.stage} — ${s.balance} نقطة</small>
+      </label>`).join('')}
+    </div>`).join('');
   }
 
   async function loadGroupsAdmin() {
     await ensureStudentsCache();
-    const stage = document.getElementById('groupStageSelect').value;
     const data = await callAppsScript({ action: 'getGroups', stage: '' });
     groupsAdminCache = data.success ? data.groups : [];
     const wrap = document.getElementById('groupsList');
@@ -2513,12 +2521,14 @@
       <div style="flex:1;"><div class="list-item-title">${g.name}</div><div class="list-item-sub">${g.stage} — ${g.members.length} طلاب — ${g.totalPoints} نقطة</div></div>
       <div class="list-item-actions"><button type="button" class="icon-btn" data-edit-group="${g.id}">✏️</button><button type="button" class="icon-btn" data-delete-group="${g.id}">🗑️</button></div>
     </div>`).join('');
-    if (stage) renderGroupStudentsPicker(stage, []);
+    if (!document.getElementById('editingGroupId').value) renderGroupStudentsPicker([]);
   }
 
-  document.getElementById('groupStageSelect').addEventListener('change', async (e) => {
-    await ensureStudentsCache();
-    renderGroupStudentsPicker(e.target.value, []);
+  document.getElementById('groupStudentSearchInput').addEventListener('input', () => renderGroupStudentsPicker());
+  document.getElementById('groupStudentsPicker').addEventListener('change', (e) => {
+    if (!e.target.classList.contains('group-student-checkbox')) return;
+    if (e.target.checked) groupSelectedIds.add(String(e.target.value));
+    else groupSelectedIds.delete(String(e.target.value));
   });
 
   document.getElementById('groupsList').addEventListener('click', async (e) => {
@@ -2529,8 +2539,10 @@
       if (!group) return;
       document.getElementById('editingGroupId').value = group.id;
       document.getElementById('groupNameInput').value = group.name;
-      document.getElementById('groupStageSelect').value = group.stage;
-      renderGroupStudentsPicker(group.stage, group.members.map((m) => m.id));
+      const validCategories = ['مختلطة', 'ابتدائي', 'متوسط', 'ثانوي'];
+      document.getElementById('groupStageSelect').value = validCategories.includes(group.stage) ? group.stage : 'مختلطة';
+      document.getElementById('groupStudentSearchInput').value = '';
+      renderGroupStudentsPicker(group.members.map((m) => m.id));
       document.getElementById('cancelGroupEditBtn').classList.remove('hidden');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -2543,8 +2555,10 @@
   function resetGroupForm() {
     document.getElementById('editingGroupId').value = '';
     document.getElementById('groupNameInput').value = '';
-    document.getElementById('groupStageSelect').value = '';
-    document.getElementById('groupStudentsPicker').innerHTML = '<p class="list-empty">اختر المرحلة لعرض الطلاب</p>';
+    document.getElementById('groupStageSelect').value = 'مختلطة';
+    document.getElementById('groupStudentSearchInput').value = '';
+    groupSelectedIds = new Set();
+    renderGroupStudentsPicker([]);
     document.getElementById('cancelGroupEditBtn').classList.add('hidden');
   }
   document.getElementById('cancelGroupEditBtn').addEventListener('click', resetGroupForm);
@@ -2557,7 +2571,7 @@
       groupId: document.getElementById('editingGroupId').value,
       name: document.getElementById('groupNameInput').value.trim(),
       stage: document.getElementById('groupStageSelect').value,
-      studentIds: Array.from(document.querySelectorAll('.group-student-checkbox:checked')).map((el) => el.value)
+      studentIds: Array.from(groupSelectedIds)
     };
     btn.disabled = true; msg.textContent = '';
     try {
