@@ -209,7 +209,8 @@
   .nav-btn.active .nav-ic{transform:translateY(-2px);}
   .bottom-nav{overflow-x:auto;}
   .bottom-nav .nav-btn{min-width:74px;}
-  .ranking-columns{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;align-items:start;}
+  .ranking-columns{display:flex;gap:14px;align-items:flex-start;overflow-x:auto;padding-bottom:10px;scroll-snap-type:x proximity;}
+  .ranking-column{min-width:250px;max-width:290px;scroll-snap-align:start;}
   .ranking-column{background:#FBFAFD;border:2px solid #EFEAF8;border-radius:18px;padding:14px;}
   .ranking-total{font-family:'Baloo Bhaijaan 2',sans-serif;font-size:1.2rem;font-weight:800;color:var(--violet);margin:6px 0 12px;}
 
@@ -585,7 +586,7 @@
       <!-- القائمة (افتراضي) -->
       <div id="balanceListView">
         <div class="card">
-          <div class="section-title">💰 رصيد الطلاب</div>
+        <div class="section-title">➕ إضافة نقاط</div>
           <div class="section-sub">ابحث بالاسم أو الرقم، أو اختر مرحلة. حدد طالب لتعديل رصيده، أو عدة طلاب لتعديل جماعي</div>
 
           <label>بحث بالاسم أو الرقم<input type="text" id="balanceSearchInput" placeholder="مثال: محمد أو 0537"></label>
@@ -709,25 +710,24 @@
     <div class="page-panel" data-page="4">
       <div class="card">
         <div class="section-title">👥 إنشاء وإدارة المجموعات</div>
-        <div class="section-sub">اختر مجموعة موجودة لتعديلها، أو أنشئ مجموعة جديدة وحدد طلابها من أي صف أو مرحلة</div>
-        <input type="hidden" id="editingGroupId">
-        <label>تصنيف المجموعة<select id="groupStageSelect"><option value="مختلطة">مختلطة</option><option value="ابتدائي">ابتدائي</option><option value="متوسط">متوسط</option><option value="ثانوي">ثانوي</option></select></label>
-        <label>اسم المجموعة<input id="groupNameInput" type="text" placeholder="مثال: فرسان الهمة"></label>
-        <label>البحث عن طالب<input id="groupStudentSearchInput" type="search" placeholder="اكتب اسم الطالب أو صفه"></label>
-        <div id="groupStudentsPicker"><p class="list-empty">جاري تحميل الطلاب...</p></div>
-        <button type="button" id="saveGroupBtn">💾 حفظ المجموعة</button>
-        <button type="button" id="cancelGroupEditBtn" class="btn-secondary hidden">إلغاء التعديل</button>
+        <div class="section-sub">أنشئ المجموعة أولًا، ثم أضف أو احذف طلابها من شاشة التعديل</div>
+        <label>العملية<select id="groupModeSelect"><option value="create">إنشاء مجموعة</option><option value="edit">التعديل على مجموعة</option></select></label>
+        <label>المرحلة<select id="groupStageSelect"><option>رابع+خامس+سادس</option><option>متوسط</option><option>ثانوي</option></select></label>
+        <div id="groupCreatePanel"><label>اسم المجموعة<input id="groupNameInput" type="text" placeholder="مثال: فرسان الهمة"></label><button type="button" id="createGroupBtn">إنشاء المجموعة</button></div>
+        <div id="groupEditPanel" class="hidden"><button type="button" id="loadStageGroupsBtn">تأكيد وعرض المجموعات</button><div id="groupsList"></div></div>
         <p class="error" id="groupFormMsg"></p>
       </div>
-      <div class="card"><div class="section-title">📋 المجموعات الحالية</div><div id="groupsList"></div></div>
+      <div class="card hidden" id="groupMembersEditor"><div class="section-title" id="groupEditorTitle"></div><label>بحث<input id="groupStudentSearchInput" type="search" placeholder="ابحث بالاسم"></label><div id="groupStudentsPicker"></div><button type="button" id="saveGroupMembersBtn">تأكيد</button><button type="button" id="cancelGroupEditBtn" class="btn-secondary">إلغاء</button></div>
     </div>
 
     <!-- ============ 5) الترتيب ============ -->
     <div class="page-panel" data-page="5">
       <div class="card">
         <div class="section-title">🏆 ترتيب المجموعات والطلاب</div>
-        <label>تصنيف المجموعة<select id="rankingStageSelect"><option value="">كل التصنيفات</option><option value="مختلطة">مختلطة</option><option value="ابتدائي">ابتدائي</option><option value="متوسط">متوسط</option><option value="ثانوي">ثانوي</option></select></label>
-        <label>المجموعة<select id="rankingGroupSelect"><option value="">كل المجموعات</option></select></label>
+        <label>المرحلة<select id="rankingStageSelect"><option>رابع+خامس+سادس</option><option>متوسط</option><option>ثانوي</option></select></label>
+        <label>نوع الترتيب<select id="rankingModeSelect"><option value="groups">مجموعات</option><option value="individuals">أفراد</option></select></label>
+        <label id="rankingGroupsLabel">المجموعات<div id="rankingGroupChecks"></div></label>
+        <label style="display:flex;align-items:center;gap:8px"><input id="rankingDetailsCheck" type="checkbox" checked style="width:22px;margin:0"> إظهار التفاصيل</label>
         <button type="button" id="showRankingBtn">إظهار الترتيب</button>
       </div>
       <div id="rankingColumns" class="ranking-columns"></div>
@@ -738,6 +738,8 @@
       <div class="card">
         <div class="section-title">⚙️ إدارة بنود النقاط</div>
         <div class="section-sub">أضف بندًا أو عدّل اسمه ونقاطه وعدد مربعاته (الحد الأقصى 4)</div>
+        <button type="button" id="showAchievementItemFormBtn">➕ إضافة بند</button>
+        <div id="achievementItemForm" class="hidden">
         <input type="hidden" id="achievementItemKey">
         <label>اسم البند<input id="achievementItemLabel" type="text" placeholder="مثال: الكرم"></label>
         <label>نقاط كل مربع<input id="achievementItemPoints" type="number" inputmode="numeric" min="0" placeholder="مثال: 30"></label>
@@ -746,6 +748,7 @@
         <button type="button" id="saveAchievementItemBtn">💾 حفظ البند</button>
         <button type="button" id="cancelAchievementItemEditBtn" class="btn-secondary hidden">إلغاء التعديل</button>
         <p class="error" id="achievementItemMsg"></p>
+        </div>
       </div>
       <div class="card"><div class="section-title">📋 البنود الحالية</div><div id="achievementItemsList"></div></div>
     </div>
@@ -753,7 +756,7 @@
   </div>
 
   <div class="bottom-nav">
-    <button class="nav-btn active" data-index="0"><span class="nav-ic">💰</span><span>رصيد الطلاب</span></button>
+    <button class="nav-btn active" data-index="0"><span class="nav-ic">➕</span><span>إضافة نقاط</span></button>
     <button class="nav-btn" data-index="1"><span class="nav-ic">📣</span><span>الإعلانات</span></button>
     <button class="nav-btn" data-index="3"><span class="nav-ic">📝</span><span>التسجيل</span></button>
     <button class="nav-btn" data-index="4"><span class="nav-ic">👥</span><span>المجموعات</span></button>
@@ -2485,6 +2488,8 @@
 
   /* ==================== إدارة المجموعات والترتيب ==================== */
   let groupsAdminCache = [];
+  let editingGroup = null;
+  let groupEditorMode = 'add';
 
   async function ensureStudentsCache() {
     if (allStudentsCache && allStudentsCache.length) return;
@@ -2494,11 +2499,20 @@
 
   let groupSelectedIds = new Set();
 
+  function categoryMatches(stage, category) {
+    if (category === 'رابع+خامس+سادس') return ['رابع ابتدائي','خامس ابتدائي','سادس ابتدائي'].includes(stage);
+    if (category === 'متوسط') return stage.includes('متوسط');
+    return stage.includes('ثانوي');
+  }
+
   function renderGroupStudentsPicker(selectedIds) {
     const wrap = document.getElementById('groupStudentsPicker');
     if (selectedIds) groupSelectedIds = new Set(selectedIds.map(String));
     const query = document.getElementById('groupStudentSearchInput').value.trim().toLowerCase();
-    const students = (allStudentsCache || []).filter((s) => !query || String(s.name).toLowerCase().includes(query) || String(s.stage).toLowerCase().includes(query));
+    const category = editingGroup ? editingGroup.stage : document.getElementById('groupStageSelect').value;
+    let students = (allStudentsCache || []).filter((s) => categoryMatches(String(s.stage), category));
+    if (groupEditorMode === 'members') students = students.filter((s) => editingGroup.members.some((m) => String(m.id) === String(s.id)));
+    students = students.filter((s) => !query || String(s.name).toLowerCase().includes(query)).sort((a,b) => a.name.localeCompare(b.name, 'ar'));
     if (!students.length) { wrap.innerHTML = '<p class="list-empty">لا توجد نتائج مطابقة</p>'; return; }
     const byStage = {};
     students.forEach((s) => { (byStage[s.stage] ||= []).push(s); });
@@ -2506,22 +2520,21 @@
       <div class="section-sub" style="font-weight:800;color:var(--violet);margin:8px 0;">${stage}</div>
       ${byStage[stage].map((s) => `<label class="list-item" style="cursor:pointer;">
         <input type="checkbox" class="group-student-checkbox" value="${s.id}" ${groupSelectedIds.has(String(s.id)) ? 'checked' : ''} style="width:22px;margin:0;">
-        <span style="flex:1;font-weight:700;">${s.name}</span><small>${s.stage} — ${s.balance} نقطة</small>
+        <span style="flex:1;font-weight:700;">${s.name}</span><small>${s.stage}</small>
       </label>`).join('')}
     </div>`).join('');
   }
 
   async function loadGroupsAdmin() {
     await ensureStudentsCache();
-    const data = await callAppsScript({ action: 'getGroups', stage: '' });
+    const data = await callAppsScript({ action: 'getGroups', stage: document.getElementById('groupStageSelect').value });
     groupsAdminCache = data.success ? data.groups : [];
     const wrap = document.getElementById('groupsList');
     if (!groupsAdminCache.length) { wrap.innerHTML = '<p class="list-empty">لا توجد مجموعات حتى الآن</p>'; return; }
     wrap.innerHTML = groupsAdminCache.map((g) => `<div class="list-item">
       <div style="flex:1;"><div class="list-item-title">${g.name}</div><div class="list-item-sub">${g.stage} — ${g.members.length} طلاب — ${g.totalPoints} نقطة</div></div>
-      <div class="list-item-actions"><button type="button" class="icon-btn" data-edit-group="${g.id}">✏️</button><button type="button" class="icon-btn" data-delete-group="${g.id}">🗑️</button></div>
+      <div class="list-item-actions"><button type="button" class="btn-secondary" data-add-group="${g.id}">إضافة طلاب</button><button type="button" class="btn-secondary" data-edit-group="${g.id}">تعديل الطلاب</button><button type="button" class="icon-btn" data-delete-group="${g.id}">🗑️</button></div>
     </div>`).join('');
-    if (!document.getElementById('editingGroupId').value) renderGroupStudentsPicker([]);
   }
 
   document.getElementById('groupStudentSearchInput').addEventListener('input', () => renderGroupStudentsPicker());
@@ -2532,19 +2545,20 @@
   });
 
   document.getElementById('groupsList').addEventListener('click', async (e) => {
+    const addBtn = e.target.closest('[data-add-group]');
     const editBtn = e.target.closest('[data-edit-group]');
     const deleteBtn = e.target.closest('[data-delete-group]');
-    if (editBtn) {
-      const group = groupsAdminCache.find((g) => g.id === editBtn.dataset.editGroup);
+    if (addBtn || editBtn) {
+      const id = addBtn ? addBtn.dataset.addGroup : editBtn.dataset.editGroup;
+      const group = groupsAdminCache.find((g) => g.id === id);
       if (!group) return;
-      document.getElementById('editingGroupId').value = group.id;
-      document.getElementById('groupNameInput').value = group.name;
-      const validCategories = ['مختلطة', 'ابتدائي', 'متوسط', 'ثانوي'];
-      document.getElementById('groupStageSelect').value = validCategories.includes(group.stage) ? group.stage : 'مختلطة';
+      editingGroup = group;
+      groupEditorMode = addBtn ? 'add' : 'members';
       document.getElementById('groupStudentSearchInput').value = '';
+      document.getElementById('groupEditorTitle').textContent = (addBtn ? 'إضافة طلاب إلى ' : 'تعديل طلاب ') + group.name;
+      document.getElementById('groupMembersEditor').classList.remove('hidden');
       renderGroupStudentsPicker(group.members.map((m) => m.id));
-      document.getElementById('cancelGroupEditBtn').classList.remove('hidden');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      document.getElementById('groupMembersEditor').scrollIntoView({behavior:'smooth'});
     }
     if (deleteBtn && confirm('هل تريد حذف هذه المجموعة؟')) {
       await callAppsScript({ action: 'deleteGroup', groupId: deleteBtn.dataset.deleteGroup });
@@ -2552,55 +2566,68 @@
     }
   });
 
-  function resetGroupForm() {
-    document.getElementById('editingGroupId').value = '';
-    document.getElementById('groupNameInput').value = '';
-    document.getElementById('groupStageSelect').value = 'مختلطة';
-    document.getElementById('groupStudentSearchInput').value = '';
-    groupSelectedIds = new Set();
-    renderGroupStudentsPicker([]);
-    document.getElementById('cancelGroupEditBtn').classList.add('hidden');
-  }
-  document.getElementById('cancelGroupEditBtn').addEventListener('click', resetGroupForm);
+  document.getElementById('cancelGroupEditBtn').addEventListener('click', () => document.getElementById('groupMembersEditor').classList.add('hidden'));
+  document.getElementById('groupModeSelect').addEventListener('change', (e) => {
+    document.getElementById('groupCreatePanel').classList.toggle('hidden', e.target.value !== 'create');
+    document.getElementById('groupEditPanel').classList.toggle('hidden', e.target.value !== 'edit');
+  });
+  document.getElementById('loadStageGroupsBtn').addEventListener('click', loadGroupsAdmin);
 
-  document.getElementById('saveGroupBtn').addEventListener('click', async () => {
-    const btn = document.getElementById('saveGroupBtn');
+  document.getElementById('createGroupBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('createGroupBtn');
     const msg = document.getElementById('groupFormMsg');
     const payload = {
       action: 'saveGroup',
-      groupId: document.getElementById('editingGroupId').value,
       name: document.getElementById('groupNameInput').value.trim(),
       stage: document.getElementById('groupStageSelect').value,
-      studentIds: Array.from(groupSelectedIds)
+      studentIds: []
     };
     btn.disabled = true; msg.textContent = '';
     try {
       const result = await callAppsScript(payload);
       msg.style.color = result.success ? 'var(--success)' : 'var(--error)';
       msg.textContent = result.success ? '✅ تم حفظ المجموعة' : (result.error || 'تعذر الحفظ');
-      if (result.success) { resetGroupForm(); await loadGroupsAdmin(); }
+      if (result.success) { document.getElementById('groupNameInput').value=''; msg.textContent='✅ تم إنشاء المجموعة، اختر التعديل لإضافة الطلاب'; }
     } finally { btn.disabled = false; }
+  });
+
+  document.getElementById('saveGroupMembersBtn').addEventListener('click', async () => {
+    if (!editingGroup) return;
+    const original = new Set(editingGroup.members.map(m => String(m.id)));
+    const selected = Array.from(groupSelectedIds);
+    const removed = editingGroup.members.filter(m => !groupSelectedIds.has(String(m.id)));
+    const moved = selected.map(id => ({id, old: groupsAdminCache.find(g => g.id !== editingGroup.id && g.members.some(m => String(m.id) === id))})).filter(x => x.old);
+    let warning = '';
+    if (removed.length) warning += `سيتم إخراج: ${removed.map(x=>x.name).join('، ')}. `;
+    if (moved.length) warning += moved.map(x => `${(allStudentsCache.find(s=>String(s.id)===x.id)||{}).name} سيخرج من ${x.old.name} وستتأثر نقاط مجموعته`).join('\n');
+    if (warning && !confirm(warning + '\nهل تريد المتابعة؟')) return;
+    const result = await callAppsScript({action:'saveGroup', groupId:editingGroup.id, name:editingGroup.name, stage:editingGroup.stage, studentIds:selected});
+    if (result.success) { document.getElementById('groupMembersEditor').classList.add('hidden'); await loadGroupsAdmin(); }
   });
 
   async function loadRankingGroupOptions() {
     const stage = document.getElementById('rankingStageSelect').value;
     const data = await callAppsScript({ action: 'getGroups', stage: stage });
-    const select = document.getElementById('rankingGroupSelect');
-    select.innerHTML = '<option value="">كل المجموعات</option>' + (data.groups || []).map((g) => `<option value="${g.id}">${g.name}</option>`).join('');
+    document.getElementById('rankingGroupChecks').innerHTML = `<label style="display:flex;gap:8px"><input type="checkbox" id="rankingAllGroups" checked style="width:22px;margin:0">كل المجموعات</label>` + (data.groups || []).map(g => `<label style="display:flex;gap:8px"><input class="ranking-group-check" type="checkbox" value="${g.id}" style="width:22px;margin:0">${g.name}</label>`).join('');
   }
   document.getElementById('rankingStageSelect').addEventListener('change', loadRankingGroupOptions);
+  document.getElementById('rankingModeSelect').addEventListener('change', e => document.getElementById('rankingGroupsLabel').classList.toggle('hidden', e.target.value === 'individuals'));
 
   document.getElementById('showRankingBtn').addEventListener('click', async () => {
     const wrap = document.getElementById('rankingColumns');
     wrap.innerHTML = '<div class="card"><p class="list-empty">جاري تحميل الترتيب...</p></div>';
-    const data = await callAppsScript({ action: 'getGroupsRanking', stage: document.getElementById('rankingStageSelect').value, groupId: document.getElementById('rankingGroupSelect').value });
-    if (!data.success || !data.groups.length) { wrap.innerHTML = '<div class="card"><p class="list-empty">لا توجد مجموعات مطابقة</p></div>'; return; }
-    wrap.innerHTML = data.groups.map((g, groupIndex) => `<div class="ranking-column">
+    const allBox = document.getElementById('rankingAllGroups');
+    const groupIds = allBox && !allBox.checked ? Array.from(document.querySelectorAll('.ranking-group-check:checked')).map(x=>x.value) : [];
+    const data = await callAppsScript({ action: 'getAdvancedRanking', category: document.getElementById('rankingStageSelect').value, mode: document.getElementById('rankingModeSelect').value, groupIds, details: document.getElementById('rankingDetailsCheck').checked });
+    const columns = data.columns || [];
+    if (!data.success || !columns.length) { wrap.innerHTML = '<div class="card"><p class="list-empty">لا توجد نتائج مطابقة</p></div>'; return; }
+    wrap.innerHTML = columns.map((g, groupIndex) => `<div class="ranking-column card">
       <div class="section-title">${groupIndex + 1}. ${g.name}</div>
       <div class="ranking-total">مجموع المجموعة: ${g.totalPoints}</div>
-      ${g.members.map((s, i) => `<div class="list-item" style="padding:10px 0;"><b style="width:26px;">${i + 1}</b><span style="flex:1;">${s.name}</span><strong>${s.balance}</strong></div>`).join('')}
+      ${(g.members || []).map((s, i) => `<div class="list-item" style="padding:10px 0;align-items:flex-start"><b style="width:26px;">${i + 1}</b><span style="flex:1;">${s.name}<small style="display:block">${((s.details||{}).items||[]).map(x=>`${x.count} ${x.label}`).join('، ')}</small>${((s.details||{}).edits||[]).map(x=>`<small style="display:block;color:var(--pink)">${x}</small>`).join('')}</span><strong>${s.balance}</strong></div>`).join('')}
     </div>`).join('');
   });
+  loadRankingGroupOptions();
 
   /* ==================== إدارة بنود النقاط ==================== */
   let achievementItemsAdminCache = [];
@@ -2613,6 +2640,7 @@
     document.getElementById('achievementItemType').value = 'daily';
     document.getElementById('achievementItemMaxChecks').disabled = false;
     document.getElementById('cancelAchievementItemEditBtn').classList.add('hidden');
+    document.getElementById('achievementItemForm').classList.add('hidden');
   }
 
   async function loadAchievementItemsAdmin() {
@@ -2652,6 +2680,7 @@
       document.getElementById('achievementItemType').value = item.type;
       document.getElementById('achievementItemMaxChecks').disabled = item.type === 'weekly';
       document.getElementById('cancelAchievementItemEditBtn').classList.remove('hidden');
+      document.getElementById('achievementItemForm').classList.remove('hidden');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     if (toggleBtn) {
@@ -2662,6 +2691,10 @@
   });
 
   document.getElementById('cancelAchievementItemEditBtn').addEventListener('click', resetAchievementItemForm);
+  document.getElementById('showAchievementItemFormBtn').addEventListener('click', () => {
+    resetAchievementItemForm();
+    document.getElementById('achievementItemForm').classList.remove('hidden');
+  });
   document.getElementById('saveAchievementItemBtn').addEventListener('click', async () => {
     const btn = document.getElementById('saveAchievementItemBtn');
     const msg = document.getElementById('achievementItemMsg');
@@ -2691,6 +2724,13 @@
       if (result.success) { resetAchievementItemForm(); await loadAchievementItemsAdmin(); }
     } finally { btn.disabled = false; }
   });
+
+  // ترتيب صفحة الإعلانات: النصيحة الحالية، ثم الإعلانات الحالية، ثم الإضافة.
+  (() => {
+    const addCard = document.getElementById('contentForm')?.closest('.card');
+    const announcementsCard = document.getElementById('announcementsList')?.closest('.card');
+    if (addCard && announcementsCard) addCard.parentElement.insertBefore(announcementsCard, addCard);
+  })();
 </script>
 </body>
 </html>
