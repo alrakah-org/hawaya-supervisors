@@ -227,6 +227,11 @@
   .list-item-title{font-weight:800;color:var(--indigo);font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .list-item-sub{font-size:.78rem;color:var(--text-muted);margin-top:2px;}
   .list-item-actions{display:flex;gap:6px;flex-shrink:0;}
+  .group-action-btn{
+    width:auto!important;min-width:0!important;padding:7px 10px!important;margin:0!important;
+    border-radius:10px!important;font-size:.72rem!important;line-height:1.2!important;
+    box-shadow:none!important;white-space:nowrap;
+  }
   .icon-btn{
     width:auto;padding:8px;border-radius:10px;background:#F3F0FA;color:var(--indigo);
     box-shadow:none;font-size:.95rem;line-height:1;cursor:pointer;
@@ -2533,7 +2538,7 @@
     if (!groupsAdminCache.length) { wrap.innerHTML = '<p class="list-empty">لا توجد مجموعات حتى الآن</p>'; return; }
     wrap.innerHTML = groupsAdminCache.map((g) => `<div class="list-item">
       <div style="flex:1;"><div class="list-item-title">${g.name}</div><div class="list-item-sub">${g.stage} — ${g.members.length} طلاب — ${g.totalPoints} نقطة</div></div>
-      <div class="list-item-actions"><button type="button" class="btn-secondary" data-add-group="${g.id}">إضافة طلاب</button><button type="button" class="btn-secondary" data-edit-group="${g.id}">تعديل الطلاب</button><button type="button" class="icon-btn" data-delete-group="${g.id}">🗑️</button></div>
+      <div class="list-item-actions"><button type="button" class="btn-secondary group-action-btn" data-add-group="${g.id}">إضافة طلاب</button><button type="button" class="btn-secondary group-action-btn" data-edit-group="${g.id}">تعديل الطلاب</button><button type="button" class="icon-btn" data-delete-group="${g.id}">🗑️</button></div>
     </div>`).join('');
   }
 
