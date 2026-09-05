@@ -232,6 +232,12 @@
     border-radius:10px!important;font-size:.72rem!important;line-height:1.2!important;
     box-shadow:none!important;white-space:nowrap;
   }
+  .group-admin-card{background:#FBFAFD;border:2px solid #EFEAF8;border-radius:16px;margin-bottom:10px;overflow:hidden;}
+  .group-admin-card summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;cursor:pointer;list-style:none;}
+  .group-admin-card summary::-webkit-details-marker{display:none;}
+  .group-admin-card .group-chevron{color:var(--violet);font-size:1.15rem;transition:transform .2s;}
+  .group-admin-card[open] .group-chevron{transform:rotate(180deg);}
+  .group-actions-expanded{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:0 14px 14px;border-top:1px solid #EEE8F7;padding-top:12px;}
   .icon-btn{
     width:auto;padding:8px;border-radius:10px;background:#F3F0FA;color:var(--indigo);
     box-shadow:none;font-size:.95rem;line-height:1;cursor:pointer;
@@ -742,14 +748,14 @@
     <div class="page-panel" data-page="6">
       <div class="card">
         <div class="section-title">⚙️ إدارة بنود النقاط</div>
-        <div class="section-sub">أضف بندًا أو عدّل اسمه ونقاطه وعدد مربعاته (الحد الأقصى 4)</div>
+        <div class="section-sub">أضف بندًا أو عدّل اسمه ونقاطه وعدد دوائره الأسبوعية (الحد الأقصى 20)</div>
         <button type="button" id="showAchievementItemFormBtn">➕ إضافة بند</button>
         <div id="achievementItemForm" class="hidden">
         <input type="hidden" id="achievementItemKey">
         <label>اسم البند<input id="achievementItemLabel" type="text" placeholder="مثال: الكرم"></label>
-        <label>نقاط كل مربع<input id="achievementItemPoints" type="number" inputmode="numeric" min="0" placeholder="مثال: 30"></label>
-        <label>عدد مربعات الصح<select id="achievementItemMaxChecks"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
-        <label>نوع البند<select id="achievementItemType"><option value="daily">يومي</option><option value="weekly">أسبوعي</option></select></label>
+        <label>نقاط كل دائرة<input id="achievementItemPoints" type="number" inputmode="numeric" min="0" placeholder="مثال: 300"></label>
+        <label>عدد الدوائر طوال الأسبوع<input id="achievementItemMaxChecks" type="number" inputmode="numeric" min="1" max="20" value="1"></label>
+        <select id="achievementItemType" class="hidden"><option value="weekly" selected>أسبوعي</option></select>
         <button type="button" id="saveAchievementItemBtn">💾 حفظ البند</button>
         <button type="button" id="cancelAchievementItemEditBtn" class="btn-secondary hidden">إلغاء التعديل</button>
         <p class="error" id="achievementItemMsg"></p>
@@ -2536,10 +2542,10 @@
     groupsAdminCache = data.success ? data.groups : [];
     const wrap = document.getElementById('groupsList');
     if (!groupsAdminCache.length) { wrap.innerHTML = '<p class="list-empty">لا توجد مجموعات حتى الآن</p>'; return; }
-    wrap.innerHTML = groupsAdminCache.map((g) => `<div class="list-item">
-      <div style="flex:1;"><div class="list-item-title">${g.name}</div><div class="list-item-sub">${g.stage} — ${g.members.length} طلاب — ${g.totalPoints} نقطة</div></div>
-      <div class="list-item-actions"><button type="button" class="btn-secondary group-action-btn" data-add-group="${g.id}">إضافة طلاب</button><button type="button" class="btn-secondary group-action-btn" data-edit-group="${g.id}">تعديل الطلاب</button><button type="button" class="icon-btn" data-delete-group="${g.id}">🗑️</button></div>
-    </div>`).join('');
+    wrap.innerHTML = groupsAdminCache.map((g) => `<details class="group-admin-card">
+      <summary><div style="flex:1;"><div class="list-item-title">${g.name}</div><div class="list-item-sub">${g.stage} — ${g.members.length} طلاب — ${g.totalPoints} نقطة</div></div><span class="group-chevron">⌄</span></summary>
+      <div class="group-actions-expanded"><button type="button" class="btn-secondary group-action-btn" data-add-group="${g.id}">➕ إضافة طلاب</button><button type="button" class="btn-secondary group-action-btn" data-edit-group="${g.id}">✏️ تعديل الطلاب</button><button type="button" class="icon-btn danger" data-delete-group="${g.id}" aria-label="حذف المجموعة">🗑️</button></div>
+    </details>`).join('');
   }
 
   document.getElementById('groupStudentSearchInput').addEventListener('input', () => renderGroupStudentsPicker());
@@ -2642,7 +2648,7 @@
     document.getElementById('achievementItemLabel').value = '';
     document.getElementById('achievementItemPoints').value = '';
     document.getElementById('achievementItemMaxChecks').value = '1';
-    document.getElementById('achievementItemType').value = 'daily';
+    document.getElementById('achievementItemType').value = 'weekly';
     document.getElementById('achievementItemMaxChecks').disabled = false;
     document.getElementById('cancelAchievementItemEditBtn').classList.add('hidden');
     document.getElementById('achievementItemForm').classList.add('hidden');
@@ -2658,7 +2664,7 @@
       return;
     }
     wrap.innerHTML = achievementItemsAdminCache.map((item) => `<div class="list-item" style="opacity:${item.active ? 1 : .58}">
-      <div style="flex:1;"><div class="list-item-title">${item.label}</div><div class="list-item-sub">${item.type === 'weekly' ? 'أسبوعي' : 'يومي'} — ${item.points} نقطة للمربع — ${item.maxChecks} ${item.maxChecks === 1 ? 'مربع' : 'مربعات'}</div></div>
+      <div style="flex:1;"><div class="list-item-title">${item.label}</div><div class="list-item-sub">أسبوعي — ${item.points} نقطة للدائرة — ${item.maxChecks} ${item.maxChecks === 1 ? 'دائرة' : 'دوائر'}</div></div>
       <div class="list-item-actions">
         <button type="button" class="icon-btn" data-edit-achievement="${item.key}" aria-label="تعديل">✏️</button>
         <button type="button" class="icon-btn" data-toggle-achievement="${item.key}" data-active="${!item.active}" aria-label="${item.active ? 'تعطيل' : 'تفعيل'}">${item.active ? '⏸️' : '▶️'}</button>
@@ -2667,9 +2673,7 @@
   }
 
   document.getElementById('achievementItemType').addEventListener('change', (e) => {
-    const weekly = e.target.value === 'weekly';
-    document.getElementById('achievementItemMaxChecks').disabled = weekly;
-    if (weekly) document.getElementById('achievementItemMaxChecks').value = '1';
+    document.getElementById('achievementItemMaxChecks').disabled = false;
   });
 
   document.getElementById('achievementItemsList').addEventListener('click', async (e) => {
@@ -2683,7 +2687,7 @@
       document.getElementById('achievementItemPoints').value = item.points;
       document.getElementById('achievementItemMaxChecks').value = item.maxChecks;
       document.getElementById('achievementItemType').value = item.type;
-      document.getElementById('achievementItemMaxChecks').disabled = item.type === 'weekly';
+      document.getElementById('achievementItemMaxChecks').disabled = false;
       document.getElementById('cancelAchievementItemEditBtn').classList.remove('hidden');
       document.getElementById('achievementItemForm').classList.remove('hidden');
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2716,8 +2720,8 @@
       key: document.getElementById('achievementItemKey').value,
       label: labelValue,
       points: Number(pointsValue),
-      maxChecks: type === 'weekly' ? 1 : Number(document.getElementById('achievementItemMaxChecks').value),
-      type: type,
+      maxChecks: Number(document.getElementById('achievementItemMaxChecks').value),
+      type: 'weekly',
       active: current ? current.active : true,
       order: current ? current.order : achievementItemsAdminCache.length + 1
     };
