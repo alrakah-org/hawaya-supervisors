@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>مشرف هواية</title>
-<link rel="icon" type="image/png" href="logo.png">
-<link rel="apple-touch-icon" href="logo.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#352868">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -213,6 +213,9 @@
   .ranking-column{min-width:250px;max-width:290px;scroll-snap-align:start;}
   .ranking-column{background:#FBFAFD;border:2px solid #EFEAF8;border-radius:18px;padding:14px;}
   .ranking-total{font-family:'Baloo Bhaijaan 2',sans-serif;font-size:1.2rem;font-weight:800;color:var(--violet);margin:6px 0 12px;}
+  .ranking-week-filters{display:flex;gap:8px;overflow-x:auto;padding:3px 0 10px;scrollbar-width:thin;}
+  .ranking-week-btn{flex:0 0 auto;width:auto;margin:0;padding:9px 14px;border-radius:999px;background:#F3F0FA;color:var(--indigo);box-shadow:none;font-size:.8rem;}
+  .ranking-week-btn.active{background:linear-gradient(95deg,var(--blue),var(--violet));color:#fff;}
 
   /* ===================== عناصر مشتركة لإدارة القوائم (الجوائز / النصائح) ===================== */
   .list-item{
@@ -739,6 +742,8 @@
         <label>نوع الترتيب<select id="rankingModeSelect"><option value="groups">مجموعات</option><option value="individuals">أفراد</option></select></label>
         <label id="rankingGroupsLabel">المجموعات<div id="rankingGroupChecks"></div></label>
         <label style="display:flex;align-items:center;gap:8px"><input id="rankingDetailsCheck" type="checkbox" checked style="width:22px;margin:0"> إظهار التفاصيل</label>
+        <label>الفترة</label>
+        <div id="rankingWeekFilters" class="ranking-week-filters"><button type="button" class="ranking-week-btn active" data-ranking-week="all">كل الأسابيع</button></div>
         <button type="button" id="showRankingBtn">إظهار الترتيب</button>
       </div>
       <div id="rankingColumns" class="ranking-columns"></div>
@@ -811,7 +816,7 @@
   const CLOUDINARY_UPLOAD_URL = 'https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD_NAME + '/image/upload';
 
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzVV1SDLMhie0fMAf2qfu-1wB5AmSvRl3u-T7JDm2wUzaut6I8Lo3NTMpd9P9wE706blA/exec';
- const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hawaya-student/';
+  const STUDENT_APP_BASE_URL = 'https://alrakah-org.github.io/hawaya-student/';
 
   // شعار شريط الهيدر فقط — مستقل عن شعار "هواية" المستخدم بالبطاقة وشاشة الترحيب
   const HEADER_LOGO_SRC = 'delet.png';
@@ -882,11 +887,11 @@
    */
   const installBtn = document.getElementById('installBtn');
   const iosInstallOverlay = document.getElementById('iosInstallOverlay');
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   let deferredInstallPrompt = null;
 
-  if (!isStandalone && isIOS) {
+  if (!isStandalone) {
     installBtn.classList.remove('hidden');
   }
 
@@ -898,13 +903,19 @@
 
   installBtn.addEventListener('click', async () => {
     if (deferredInstallPrompt) {
-      deferredInstallPrompt.prompt();
-      await deferredInstallPrompt.userChoice;
+      await deferredInstallPrompt.prompt();
+      const choice = await deferredInstallPrompt.userChoice;
       deferredInstallPrompt = null;
-      installBtn.classList.add('hidden');
+      if (choice.outcome === 'accepted') installBtn.classList.add('hidden');
     } else if (isIOS) {
       iosInstallOverlay.classList.remove('hidden');
+    } else {
+      alert('لتثبيت مشرف هواية: افتح الرابط في Chrome أو Edge، ثم من قائمة المتصفح اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية». إذا فتحت الرابط داخل واتساب، افتحه أولًا في المتصفح.');
     }
+  });
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    installBtn.classList.add('hidden');
   });
 
   document.getElementById('closeIosHint').addEventListener('click', () => {
@@ -966,7 +977,7 @@
       loadPurchaseRequests();
     }
     if (newIndex === 4) loadGroupsAdmin();
-    if (newIndex === 5) loadRankingGroupOptions();
+    if (newIndex === 5) { loadRankingGroupOptions(); loadRankingWeeks(); }
     if (newIndex === 6) loadAchievementItemsAdmin();
   }
 
@@ -2621,6 +2632,29 @@
     const data = await callAppsScript({ action: 'getGroups', stage: stage });
     document.getElementById('rankingGroupChecks').innerHTML = `<label style="display:flex;gap:8px"><input type="checkbox" id="rankingAllGroups" checked style="width:22px;margin:0">كل المجموعات</label>` + (data.groups || []).map(g => `<label style="display:flex;gap:8px"><input class="ranking-group-check" type="checkbox" value="${g.id}" style="width:22px;margin:0">${g.name}</label>`).join('');
   }
+  let selectedRankingWeek = 'all';
+  async function loadRankingWeeks() {
+    const wrap = document.getElementById('rankingWeekFilters');
+    let data;
+    try { data = await callAppsScript({ action: 'getRankingWeeks' }); }
+    catch (_) { data = { success: false }; }
+    const supported = data.success && Array.isArray(data.weeks) && data.weeks.length;
+    const weeks = supported ? data.weeks : [{ value:'all', label:'كل الأسابيع' }];
+    if (!weeks.some(w => String(w.value) === String(selectedRankingWeek))) selectedRankingWeek = 'all';
+    wrap.innerHTML = weeks.map(w => `<button type="button" class="ranking-week-btn ${String(w.value) === String(selectedRankingWeek) ? 'active' : ''}" data-ranking-week="${w.value}">${w.label}</button>`).join('');
+    if (!supported) {
+      const notice = document.createElement('p');
+      notice.textContent = 'تعذر تحميل الأسابيع. تحقق من الاتصال ومن نشر أحدث كود Apps Script الداعم لفلتر الأسابيع.';
+      notice.setAttribute('role', 'status');
+      wrap.appendChild(notice);
+    }
+  }
+  document.getElementById('rankingWeekFilters').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-ranking-week]');
+    if (!btn) return;
+    selectedRankingWeek = btn.dataset.rankingWeek;
+    document.querySelectorAll('[data-ranking-week]').forEach(x => x.classList.toggle('active', x === btn));
+  });
   document.getElementById('rankingStageSelect').addEventListener('change', loadRankingGroupOptions);
   document.getElementById('rankingModeSelect').addEventListener('change', e => document.getElementById('rankingGroupsLabel').classList.toggle('hidden', e.target.value === 'individuals'));
 
@@ -2629,8 +2663,12 @@
     wrap.innerHTML = '<div class="card"><p class="list-empty">جاري تحميل الترتيب...</p></div>';
     const allBox = document.getElementById('rankingAllGroups');
     const groupIds = allBox && !allBox.checked ? Array.from(document.querySelectorAll('.ranking-group-check:checked')).map(x=>x.value) : [];
-    const data = await callAppsScript({ action: 'getAdvancedRanking', category: document.getElementById('rankingStageSelect').value, mode: document.getElementById('rankingModeSelect').value, groupIds, details: document.getElementById('rankingDetailsCheck').checked });
+    const data = await callAppsScript({ action: 'getAdvancedRanking', category: document.getElementById('rankingStageSelect').value, mode: document.getElementById('rankingModeSelect').value, groupIds, details: document.getElementById('rankingDetailsCheck').checked, weekNumber: selectedRankingWeek });
     const columns = data.columns || [];
+    if (selectedRankingWeek !== 'all' && String(data.weekNumber) !== String(selectedRankingWeek)) {
+      wrap.innerHTML = '<div class="card"><p role="alert">لم يؤكد الخادم تطبيق الأسبوع المحدد. حدّث نشر Apps Script قبل عرض ترتيب أسبوعي.</p></div>';
+      return;
+    }
     if (!data.success || !columns.length) { wrap.innerHTML = '<div class="card"><p class="list-empty">لا توجد نتائج مطابقة</p></div>'; return; }
     wrap.innerHTML = columns.map((g, groupIndex) => `<div class="ranking-column card">
       <div class="section-title">${groupIndex + 1}. ${g.name}</div>
@@ -2639,6 +2677,7 @@
     </div>`).join('');
   });
   loadRankingGroupOptions();
+  loadRankingWeeks();
 
   /* ==================== إدارة بنود النقاط ==================== */
   let achievementItemsAdminCache = [];
