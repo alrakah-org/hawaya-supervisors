@@ -21,7 +21,15 @@
   .top-actions{max-width:18.6cm;margin:0 auto 20px;display:flex;align-items:center;gap:12px;}
   .print-btn{max-width:260px;margin:auto;}
   .print-note{font-size:.78rem;color:var(--muted);text-align:center;margin:0 0 14px;}
-  .cards-grid{display:grid;grid-template-columns:repeat(2,9cm);grid-auto-rows:5cm;gap:.35cm .55cm;width:18.55cm;margin:0 auto;align-items:start;}
+  .cards-grid{display:grid;grid-template-columns:repeat(2,9cm);grid-auto-rows:auto;gap:.35cm .55cm;width:18.55cm;margin:0 auto;align-items:start;}
+  .stage-title{
+    grid-column:1/-1;display:flex;align-items:center;gap:.25cm;
+    margin:.18cm 0 0;padding:.16cm .28cm;border-radius:10px;
+    color:var(--purple);font-family:'Baloo Bhaijaan 2',sans-serif;font-size:.78rem;font-weight:800;
+    background:linear-gradient(90deg,rgba(104,69,154,.13),rgba(246,82,154,.09),rgba(255,168,38,.11));
+    border-right:4px solid var(--pink);break-after:avoid;page-break-after:avoid;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
   .membership-card{
     width:9cm;height:5cm;position:relative;border-radius:18px;overflow:hidden;
     background:linear-gradient(145deg,#FFF8EE 0%,#FFF0F7 46%,#EEE8FA 100%);
@@ -110,17 +118,26 @@
     try{
       const data=await callAppsScript({action:'getAllStudentsForBarcodeReport'});
       if(!data.success||!data.students?.length){container.innerHTML='<p class="empty">لا يوجد طلاب مسجلون بعد</p>';return;}
-      container.innerHTML=data.students.map((student)=>`
-        <article class="membership-card">
-          <div class="card-header"><div class="membership-title">بطاقة عضوية<small>رواد هواية</small></div><img class="logo" src="${LOGO_SRC}" alt="رواد هواية"></div>
-          <div class="student-name">${escapeHtml(student.name)}</div>
-          <div class="details">
-            <div class="detail-row"><span class="detail-label">المرحلة الدراسية</span><span class="detail-value stage">${escapeHtml(student.stage)}</span></div>
-            <div class="detail-row"><span class="detail-label">اسم المستخدم</span><span class="detail-value">${escapeHtml(student.id)}</span></div>
-            <div class="detail-row"><span class="detail-label">كلمة المرور</span><span class="detail-value">${escapeHtml(student.password)}</span></div>
-          </div>
-          <div class="card-footer"></div>
-        </article>
+      const groups=new Map();
+      data.students.forEach((student)=>{
+        const stage=String(student.stage||'بدون مرحلة');
+        if(!groups.has(stage)) groups.set(stage,[]);
+        groups.get(stage).push(student);
+      });
+      container.innerHTML=Array.from(groups.entries()).map(([stage,students])=>`
+        <div class="stage-title">مرحلة ${escapeHtml(stage)}</div>
+        ${students.map((student)=>`
+          <article class="membership-card">
+            <div class="card-header"><div class="membership-title">بطاقة عضوية<small>رواد هواية</small></div><img class="logo" src="${LOGO_SRC}" alt="رواد هواية"></div>
+            <div class="student-name">${escapeHtml(student.name)}</div>
+            <div class="details">
+              <div class="detail-row"><span class="detail-label">المرحلة الدراسية</span><span class="detail-value stage">${escapeHtml(student.stage)}</span></div>
+              <div class="detail-row"><span class="detail-label">اسم المستخدم</span><span class="detail-value">${escapeHtml(student.id)}</span></div>
+              <div class="detail-row"><span class="detail-label">كلمة المرور</span><span class="detail-value">${escapeHtml(student.password)}</span></div>
+            </div>
+            <div class="card-footer"></div>
+          </article>
+        `).join('')}
       `).join('');
     }catch(_){container.innerHTML='<p class="empty" style="color:#D1485B">تعذر تحميل البطاقات، تحقق من الاتصال</p>';}
   }
