@@ -278,6 +278,7 @@
   }
   .pending-box .icon-btn{padding:4px 8px;font-size:.8rem;}
   #customAmountInput, #bulkCustomAmountInput{margin-bottom:14px;text-align:center;}
+  #pointsReasonInput, #bulkPointsReasonInput{margin-bottom:14px;}
 
   .balance-row{cursor:pointer;}
 
@@ -333,6 +334,7 @@
           <option>عبدالعزيز الجامع</option>
           <option>فهد الخضير</option>
           <option>أسامة نور</option>
+          <option>هادي باشا</option>
         </select>
       </label>
       <label>الرقم السري<input type="text" id="supervisorPinInput" inputmode="numeric" maxlength="4" placeholder="٤ أرقام" required></label>
@@ -702,6 +704,9 @@
             <button type="button" class="amount-chip" id="customMinusBtn">−</button>
           </div>
           <input type="number" inputmode="numeric" pattern="[0-9]*" id="customAmountInput" class="hidden" placeholder="أدخل عدد النقاط">
+          <label>اسم النقاط / السبب
+            <input type="text" id="pointsReasonInput" maxlength="100" placeholder="مثال: نقاط الالتزام بالزي">
+          </label>
 
           <div id="pendingAmountBox" class="pending-box hidden">
             <span>المبلغ المحدد:</span>
@@ -793,6 +798,7 @@
       <button type="button" class="amount-chip" id="bulkCustomMinusBtn">−</button>
     </div>
     <input type="number" inputmode="numeric" pattern="[0-9]*" id="bulkCustomAmountInput" class="hidden" placeholder="أدخل عدد النقاط">
+    <input type="text" id="bulkPointsReasonInput" maxlength="100" placeholder="اسم النقاط، مثال: نقاط الالتزام بالزي">
     <div id="bulkPendingAmountBox" class="pending-box hidden">
       <span id="bulkPendingAmountText"></span>
     </div>
@@ -831,15 +837,7 @@
      تسجيل دخول المشرف — اسم من قائمة + رقم سري 4 أرقام، يبقى محفوظ
      بنفس الجهاز لين يضغط تسجيل خروج بنفسه
      ==================================================================== */
-  const SUPERVISORS = {
-    'فارس مقبول': '7142',
-    'ناصر الصياح': '5839',
-    'عبدالرحمن بامشموس': '2967',
-    'بشارة الزبير': '4051',
-    'عبدالعزيز الجامع': '8374',
-    'فهد الخضير': '1592',
-    'أسامة نور': '6203'
-  };
+  const SUPERVISOR_NAMES = ['فارس مقبول', 'ناصر الصياح', 'عبدالرحمن بامشموس', 'بشارة الزبير', 'عبدالعزيز الجامع', 'فهد الخضير', 'أسامة نور', 'هادي باشا'];
   const SUPERVISOR_SESSION_KEY = 'hawaya_supervisor_session';
   let currentSupervisorName = '';
 
@@ -854,18 +852,28 @@
     document.getElementById('appView').classList.remove('hidden');
   }
 
-  document.getElementById('supervisorLoginForm').addEventListener('submit', (e) => {
+  document.getElementById('supervisorLoginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = document.getElementById('supervisorNameSelect').value;
     const pin = document.getElementById('supervisorPinInput').value.trim();
     const errEl = document.getElementById('supervisorLoginError');
+    const loginBtn = document.getElementById('supervisorLoginBtn');
     errEl.textContent = '';
 
     if (!name || !pin) { errEl.textContent = 'اختر اسمك وأدخل رقمك السري'; return; }
-    if (SUPERVISORS[name] !== pin) { errEl.textContent = 'الرقم السري غير صحيح'; return; }
-
-    localStorage.setItem(SUPERVISOR_SESSION_KEY, name);
-    showSupervisorApp(name);
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'جاري الدخول...';
+    try {
+      const result = await callAppsScript({ action: 'supervisorLogin', name: name, pin: pin });
+      if (!result.success) { errEl.textContent = result.error || 'الرقم السري غير صحيح'; return; }
+      localStorage.setItem(SUPERVISOR_SESSION_KEY, name);
+      showSupervisorApp(name);
+    } catch (_) {
+      errEl.textContent = 'تعذر الاتصال، حاول مرة أخرى';
+    } finally {
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'دخول';
+    }
   });
 
   document.getElementById('supervisorLogoutBtn').addEventListener('click', () => {
@@ -877,7 +885,7 @@
 
   (function initSupervisorAuth() {
     const saved = localStorage.getItem(SUPERVISOR_SESSION_KEY);
-    if (saved && SUPERVISORS[saved]) showSupervisorApp(saved);
+    if (saved && SUPERVISOR_NAMES.includes(saved)) showSupervisorApp(saved);
     else showSupervisorLogin();
   })();
 
@@ -2058,6 +2066,7 @@
     selectedStudentId = id;
     pendingAmount = null;
     updatePendingDisplay();
+    document.getElementById('pointsReasonInput').value = '';
     document.getElementById('customAmountInput').classList.add('hidden');
     document.getElementById('editStudentForm').classList.add('hidden');
 
@@ -2275,7 +2284,8 @@
     const errEl = document.getElementById('adjustError');
     btn.disabled = true; btn.textContent = 'جاري التأكيد...'; errEl.textContent = '';
     try {
-      const result = await callAppsScript({ action: 'adjustPoints', id: selectedStudentId, amount: pendingAmount, supervisorName: currentSupervisorName });
+      const reason = document.getElementById('pointsReasonInput').value.trim();
+      const result = await callAppsScript({ action: 'adjustPoints', id: selectedStudentId, amount: pendingAmount, reason: reason, supervisorName: currentSupervisorName });
       if (!result.success) { errEl.textContent = result.error || 'تعذر التعديل'; return; }
 
       document.getElementById('detailBalance').textContent = result.newBalance + ' نقطة';
@@ -2287,6 +2297,7 @@
       }
 
       pendingAmount = null;
+      document.getElementById('pointsReasonInput').value = '';
       updatePendingDisplay();
       loadPointsLog(selectedStudentId, true);
     } catch (_) {
@@ -2342,6 +2353,7 @@
       bar.classList.add('hidden');
       document.getElementById('balanceListView').classList.remove('bulk-bar-open');
       bulkPendingAmount = null;
+      document.getElementById('bulkPointsReasonInput').value = '';
       updateBulkPendingDisplay();
       document.getElementById('bulkCustomAmountInput').classList.add('hidden');
       return;
@@ -2442,7 +2454,8 @@
     let failMsg = null;
     try {
       const ids = Array.from(selectedBulkIds);
-      const result = await callAppsScript({ action: 'bulkAdjustPoints', ids: ids, amount: bulkPendingAmount, supervisorName: currentSupervisorName });
+      const reason = document.getElementById('bulkPointsReasonInput').value.trim();
+      const result = await callAppsScript({ action: 'bulkAdjustPoints', ids: ids, amount: bulkPendingAmount, reason: reason, supervisorName: currentSupervisorName });
       if (!result.success) {
         failMsg = 'فشل، حاول مرة أخرى';
       } else {
@@ -2456,6 +2469,7 @@
         }
         selectedBulkIds.clear();
         bulkPendingAmount = null;
+        document.getElementById('bulkPointsReasonInput').value = '';
         updateBulkBar();
         updateBulkPendingDisplay();
         filterAndRenderBalanceStudents();
